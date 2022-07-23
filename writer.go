@@ -1,0 +1,134 @@
+package customexcelwriter
+
+import "github.com/xuri/excelize/v2"
+
+type ExcelWriter struct {
+	file        *excelize.File //Файл с которым мы работаем
+	activeSheet string         //Текущий активный лист
+
+	row int //Текущая строка
+	col int //Текущая колонка
+
+	writeBlock WorkBlock //Лежат данные последнего блока, который писали
+}
+
+func (ew *ExcelWriter) CreateFile() *ExcelWriter {
+	ew.file = excelize.NewFile()
+	ew.file.SetDefaultFont("Calibri")
+	ew.activeSheet = "Sheet1"
+	ew.SetCursor(1, 1)
+	return ew
+}
+
+//Удаляем все листы с книги
+func (ew *ExcelWriter) RemoveAllSheets(left ...string) *ExcelWriter {
+	for _, sheet := range ew.file.GetSheetList() {
+		var keepIt bool
+		for _, lName := range left {
+			if lName == sheet {
+				keepIt = true
+				break
+			}
+		}
+		if !keepIt {
+			ew.file.DeleteSheet(sheet)
+		}
+	}
+	return ew
+}
+
+//Создаем лист с нужным именем и делаем его активным
+func (ew *ExcelWriter) CreateSheet(sName string) *ExcelWriter {
+	ew.file.NewSheet(sName)
+	ew.activeSheet = sName
+	ew.SetCursor(1, 1)
+	ew.file.SetSheetFormatPr(sName, excelize.DefaultRowHeight(14))
+	return ew
+}
+
+//Создаем листи и оставляем его единственным
+func (ew *ExcelWriter) CreateLonelySheet(sName string) *ExcelWriter {
+	ew.CreateSheet(sName)
+	ew.RemoveAllSheets(sName)
+	return ew
+}
+
+//Сохраняем файл
+func (ew *ExcelWriter) SaveFile(path string) error {
+	return ew.file.SaveAs(path)
+}
+
+func (ew *ExcelWriter) GetFileContext() (*[]byte, error) {
+	content, err := ew.file.WriteToBuffer()
+	if err != nil {
+		return nil, err
+	}
+	bytes := content.Bytes()
+	return &bytes, nil
+}
+
+//Применяем стиль к блоку ячеек
+func (ew *ExcelWriter) ApplyStyle(style *CellStyle, block *WorkBlock) {
+	if style == nil {
+		return
+	}
+	var wb WorkBlock
+	if block == nil {
+		wb = ew.writeBlock
+	} else {
+		wb = *block
+	}
+	hcell, wcell := wb.GetFirstLastCells()
+	styleIndex, err := ew.file.NewStyle(style.calculateStyle())
+	if err != nil {
+		return
+	}
+	ew.file.SetCellStyle(ew.activeSheet, hcell, wcell, styleIndex)
+}
+
+//Выровнять высоту заданных или всех строк всех листов файла
+//nHeight - высота в пикселях. По умолчанию - 14
+func (ew *ExcelWriter) AlignFileRows(nHeight ...int) {
+	var height int = 14
+	for _, h := range nHeight {
+		height = h
+	}
+
+	for _, sheet := range ew.file.GetSheetList() {
+		rows, err := ew.file.Rows(sheet)
+		if err != nil {
+			continue
+		}
+		for row := 1; row <= rows.TotalRows(); row++ {
+			ew.file.SetRowHeight(sheet, row, float64(height))
+		}
+	}
+}
+
+//Установить ширину колонок
+//Если не указываем номер колонки - тогда все колонки блока
+func (ew *ExcelWriter) SetColumnsWidth(widht int, cols ...string) {
+	if len(cols) > 0 {
+		for _, col := range cols {
+			ew.file.SetColWidth(ew.activeSheet, col, col, float64(widht))
+		}
+	} else {
+		listColumns := *ew.writeBlock.ColumnsList()
+		ew.file.SetColWidth(ew.activeSheet, listColumns[0], listColumns[len(listColumns)-1], float64(widht))
+	}
+}
+
+//Перевести каретку в начало строки со сдвигом на rows строк
+//По умолчанию rows = 1
+func (ew *ExcelWriter) CursorNextLine(rows ...int) {
+	cRows := 1
+	for _, r := range rows {
+		cRows = r
+	}
+	ew.SetCursor(1, ew.row+cRows)
+}
+
+//Даем пользователю текущий рабочий блок
+func (ew *ExcelWriter) WorkBlock() *WorkBlock {
+	return &ew.writeBlock
+}
