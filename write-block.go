@@ -25,7 +25,17 @@ func (wb *WorkBlock) calculateBlockData(startCol, startRow, width, height int) {
 
 //Получаем координаты первой и последней по диагонали ячейки
 func (wb WorkBlock) GetFirstLastCells() (string, string) {
-	return coordinatesToString(wb.ColStart, wb.RowStart), coordinatesToString(wb.ColEnd, wb.RowEnd)
+	return wb.GetFirstCell(), wb.GetLastCell()
+}
+
+//Отримуэмо координати першої ячейки блоку
+func (wb WorkBlock) GetFirstCell() string {
+	return coordinatesToString(wb.ColStart, wb.RowStart)
+}
+
+//Отримуэмо координати останньої ячейки блоку
+func (wb WorkBlock) GetLastCell() string {
+	return coordinatesToString(wb.ColEnd, wb.RowEnd)
 }
 
 //Возвращаем ширину блока

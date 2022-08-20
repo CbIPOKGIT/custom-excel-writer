@@ -44,6 +44,22 @@ func (ew *ExcelWriter) SetCellValue(value interface{}, sizes ...int) *WorkBlock 
 }
 
 /*
+Додаємо hyperlink до активного блоку
+link - посилання
+cell - Координати ячейки. Якщо нема, приміняємо до активного блоку
+*/
+func (ew *ExcelWriter) SetHyperLink(link string, cell ...string) {
+	var coord string
+	if len(cell) == 1 {
+		coord = cell[0]
+	} else {
+		coord = ew.writeBlock.GetFirstCell()
+	}
+
+	ew.file.SetCellHyperLink(ew.activeSheet, coord, link, "External")
+}
+
+/*
 Обєднуємо декілька ячеєк в одну
 */
 func (ew *ExcelWriter) MergeCells(colStart, rowStart, colEnd, rowEnd int) error {
