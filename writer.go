@@ -118,6 +118,20 @@ func (ew *ExcelWriter) SetColumnsWidth(widht int, cols ...string) {
 	}
 }
 
+//Установить ширину строки
+//Если не указано - тогда все строки блока
+func (ew *ExcelWriter) SetRowsHeight(height int, rows ...int) {
+	if len(rows) > 0 {
+		for _, row := range rows {
+			ew.file.SetRowHeight(ew.activeSheet, row, float64(height))
+		}
+	} else {
+		for i := ew.writeBlock.RowStart; i <= ew.writeBlock.RowEnd; i++ {
+			ew.file.SetRowHeight(ew.activeSheet, i, float64(height))
+		}
+	}
+}
+
 //Перевести каретку в начало строки со сдвигом на rows строк
 //По умолчанию rows = 1
 func (ew *ExcelWriter) CursorNextLine(rows ...int) {
