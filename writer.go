@@ -58,13 +58,12 @@ func (ew *ExcelWriter) SaveFile(path string) error {
 	return ew.file.SaveAs(path)
 }
 
-func (ew *ExcelWriter) GetFileContext() (*[]byte, error) {
+func (ew *ExcelWriter) GetFileContext() ([]byte, error) {
 	content, err := ew.file.WriteToBuffer()
 	if err != nil {
 		return nil, err
 	}
-	bytes := content.Bytes()
-	return &bytes, nil
+	return content.Bytes(), nil
 }
 
 //Применяем стиль к блоку ячеек
@@ -95,11 +94,11 @@ func (ew *ExcelWriter) AlignFileRows(nHeight ...int) {
 	}
 
 	for _, sheet := range ew.file.GetSheetList() {
-		rows, err := ew.file.Rows(sheet)
+		rows, err := ew.file.GetRows(sheet)
 		if err != nil {
 			continue
 		}
-		for row := 1; row <= rows.TotalRows(); row++ {
+		for row := 1; row <= len(rows); row++ {
 			ew.file.SetRowHeight(sheet, row, float64(height))
 		}
 	}
