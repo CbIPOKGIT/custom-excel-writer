@@ -31,7 +31,7 @@ func (ew ExcelWriter) GetHeaderStyle() *CellStyle {
 		HorizontalAlignment: "center",
 		VerticalAlignment:   "center",
 		FontBold:            true,
-		BorderStyle:         "thick",
+		BorderStyle:         "thin",
 		BorderColor:         "a0a0a0",
 	}
 }
