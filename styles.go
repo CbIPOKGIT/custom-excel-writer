@@ -6,7 +6,11 @@ import (
 	"github.com/xuri/excelize/v2"
 )
 
-const DEFAULT_FONT_SIZE = 9
+const (
+	DEFAULT_FONT_SIZE = 9
+
+	COLOR_WARNING = "fa8072"
+)
 
 type CellStyle struct {
 	BordersList []string //Если пусто - значит все, иначе только со списка
