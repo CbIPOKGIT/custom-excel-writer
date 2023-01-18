@@ -2,6 +2,8 @@ package customexcelwriter
 
 import "github.com/xuri/excelize/v2"
 
+const DEFAULT_SHEET_NAME = ""
+
 type ExcelWriter struct {
 	file        *excelize.File //Файл с которым мы работаем
 	activeSheet string         //Текущий активный лист
@@ -38,11 +40,18 @@ func (ew *ExcelWriter) RemoveAllSheets(left ...string) *ExcelWriter {
 }
 
 //Создаем лист с нужным именем и делаем его активным
-func (ew *ExcelWriter) CreateSheet(sName string) *ExcelWriter {
-	ew.file.NewSheet(sName)
-	ew.activeSheet = sName
+func (ew *ExcelWriter) CreateSheet(sName ...string) *ExcelWriter {
+	var sheetName string
+	if len(sName) > 0 {
+		sheetName = sName[0]
+	} else {
+		sheetName = "Worksheet"
+	}
+
+	ew.file.NewSheet(sheetName)
+	ew.activeSheet = sheetName
 	ew.SetCursor(1, 1)
-	ew.file.SetSheetFormatPr(sName, excelize.DefaultRowHeight(14))
+	ew.file.SetSheetFormatPr(sheetName, excelize.DefaultRowHeight(14))
 	return ew
 }
 
