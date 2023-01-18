@@ -4,7 +4,7 @@ import (
 	"errors"
 )
 
-//Устанавливаем курсор вручную
+// Устанавливаем курсор вручную
 func (ew *ExcelWriter) SetCursor(col, row int) *ExcelWriter {
 	if col > 0 {
 		ew.col = col
@@ -72,8 +72,12 @@ func (ew *ExcelWriter) MergeCells(colStart, rowStart, colEnd, rowEnd int) error 
 /*
 Обєднуємо ячейки останнього блоку
 */
-func (ew *ExcelWriter) mergeWorkBlockCells() error {
-	return ew.MergeCells(ew.writeBlock.ColStart, ew.writeBlock.RowStart, ew.writeBlock.ColEnd, ew.writeBlock.RowEnd)
+func (ew *ExcelWriter) mergeWorkBlockCells(blocks ...*WorkBlock) error {
+	block := &ew.writeBlock
+	if len(blocks) > 0 {
+		block = blocks[0]
+	}
+	return ew.MergeCells(block.ColStart, block.RowStart, block.ColEnd, block.RowEnd)
 }
 
 /**
@@ -88,15 +92,15 @@ func (ew *ExcelWriter) SetCellValueRelatively(value interface{}, offsetY, offset
 		return nil, errors.New("Cell is out of sheet")
 	}
 
-	tempBlock.ColEnd = tempBlock.ColEnd + width - 1
+	tempBlock.ColEnd = tempBlock.ColStart + width - 1
 	tempBlock.RowEnd = tempBlock.RowStart + height - 1
 
 	ew.file.SetCellValue(ew.activeSheet, coordinatesToString(tempBlock.ColStart, tempBlock.RowStart), value)
 
-	return &tempBlock, nil
+	return &tempBlock, ew.mergeWorkBlockCells(&tempBlock)
 }
 
-//Вычисляем размеры текущего блока с которым работаем
+// Вычисляем размеры текущего блока с которым работаем
 func (ew *ExcelWriter) calculateWriteBlock(width, height int) {
 	ew.writeBlock.calculateBlockData(ew.col, ew.row, width, height)
 }
