@@ -154,3 +154,8 @@ func (ew *ExcelWriter) CursorNextLine(rows ...int) {
 func (ew *ExcelWriter) WorkBlock() *WorkBlock {
 	return &ew.writeBlock
 }
+
+//Переводим номер колонки (число) в строку
+func (ew ExcelWriter) ColumnIndexToString(index int) (string, error) {
+	return excelize.ColumnNumberToName(index)
+}
