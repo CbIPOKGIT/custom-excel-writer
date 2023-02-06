@@ -84,7 +84,7 @@ func (ew *ExcelWriter) mergeWorkBlockCells(blocks ...*WorkBlock) error {
 * Пишем значение в ячейку
 * Координаты устанавливаются относительно последнего блока
  */
-func (ew *ExcelWriter) SetCellValueRelatively(value interface{}, offsetY, offsetX, width, height int) (*WorkBlock, error) {
+func (ew *ExcelWriter) SetCellValueRelatively(value interface{}, offsetY, offsetX int, sizes ...int) (*WorkBlock, error) {
 	var tempBlock WorkBlock
 	tempBlock.ColStart = ew.writeBlock.ColStart + offsetX
 	tempBlock.RowStart = ew.writeBlock.RowStart + offsetY
@@ -92,8 +92,19 @@ func (ew *ExcelWriter) SetCellValueRelatively(value interface{}, offsetY, offset
 		return nil, errors.New("Cell is out of sheet")
 	}
 
-	tempBlock.ColEnd = tempBlock.ColStart + width - 1
-	tempBlock.RowEnd = tempBlock.RowStart + height - 1
+	tempBlock.ColEnd = tempBlock.ColStart
+	if len(sizes) > 0 {
+		if sizes[0] > 1 {
+			tempBlock.ColEnd = tempBlock.ColStart + sizes[0] - 1
+		}
+	}
+
+	tempBlock.RowEnd = tempBlock.RowStart
+	if len(sizes) > 1 {
+		if sizes[1] > 1 {
+			tempBlock.RowEnd = tempBlock.RowStart + sizes[1] - 1
+		}
+	}
 
 	ew.file.SetCellValue(ew.activeSheet, coordinatesToString(tempBlock.ColStart, tempBlock.RowStart), value)
 
