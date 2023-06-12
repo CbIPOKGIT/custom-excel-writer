@@ -2,7 +2,10 @@ package customexcelwriter
 
 import "github.com/xuri/excelize/v2"
 
-const DEFAULT_SHEET_NAME = ""
+const (
+	DEFAULT_SHEET_NAME         = ""
+	DEFAULT_ROW_HEIGHT float64 = 14
+)
 
 type ExcelWriter struct {
 	file        *excelize.File //Файл с которым мы работаем
@@ -51,7 +54,15 @@ func (ew *ExcelWriter) CreateSheet(sName ...string) *ExcelWriter {
 	ew.file.NewSheet(sheetName)
 	ew.activeSheet = sheetName
 	ew.SetCursor(1, 1)
-	ew.file.SetSheetFormatPr(sheetName, excelize.DefaultRowHeight(14))
+
+	var defaultRowHeight float64 = DEFAULT_ROW_HEIGHT
+
+	ew.file.SetSheetProps(
+		sheetName,
+		&excelize.SheetPropsOptions{
+			DefaultRowHeight: &defaultRowHeight,
+		},
+	)
 	return ew
 }
 
@@ -97,9 +108,9 @@ func (ew *ExcelWriter) ApplyStyle(style *CellStyle, block *WorkBlock) {
 //Выровнять высоту заданных или всех строк всех листов файла
 //nHeight - высота в пикселях. По умолчанию - 14
 func (ew *ExcelWriter) AlignFileRows(nHeight ...int) {
-	var height int = 14
+	var height float64 = DEFAULT_ROW_HEIGHT
 	for _, h := range nHeight {
-		height = h
+		height = float64(h)
 	}
 
 	for _, sheet := range ew.file.GetSheetList() {
@@ -108,7 +119,7 @@ func (ew *ExcelWriter) AlignFileRows(nHeight ...int) {
 			continue
 		}
 		for row := 1; row <= len(rows); row++ {
-			ew.file.SetRowHeight(sheet, row, float64(height))
+			ew.file.SetRowHeight(sheet, row, height)
 		}
 	}
 }
