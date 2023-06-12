@@ -43,6 +43,26 @@ func (ew *ExcelWriter) SetCellValue(value interface{}, sizes ...int) *WorkBlock 
 	return &ew.writeBlock
 }
 
+func (ew *ExcelWriter) SetCellFormula(formula string, sizes ...int) *WorkBlock {
+	width, height := 1, 1
+	if len(sizes) >= 1 {
+		width = sizes[0]
+	}
+	if len(sizes) >= 2 {
+		height = sizes[1]
+	}
+
+	ew.file.SetCellFormula(ew.activeSheet, ew.cursorToString(), formula)
+	ew.calculateWriteBlock(width, height)
+
+	if width > 1 || height > 1 {
+		ew.mergeWorkBlockCells()
+	}
+
+	ew.moveCursorNext()
+	return &ew.writeBlock
+}
+
 /*
 Додаємо hyperlink до активного блоку
 link - посилання
