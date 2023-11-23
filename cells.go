@@ -2,6 +2,8 @@ package customexcelwriter
 
 import (
 	"errors"
+
+	"github.com/xuri/excelize/v2"
 )
 
 // Устанавливаем курсор вручную
@@ -77,6 +79,25 @@ func (ew *ExcelWriter) SetHyperLink(link string, cell ...string) {
 	}
 
 	ew.file.SetCellHyperLink(ew.activeSheet, coord, link, "External")
+}
+
+/*
+Додаємо комент до активного блоку
+text - текст коментаря
+cell - Координати ячейки. Якщо нема, приміняємо до активного блоку
+*/
+func (ew *ExcelWriter) SetComment(text string, cell ...string) {
+	var coord string
+	if len(cell) == 1 {
+		coord = cell[0]
+	} else {
+		coord = ew.writeBlock.GetFirstCell()
+	}
+
+	ew.file.AddComment(ew.activeSheet, excelize.Comment{
+		Cell: coord,
+		Text: text,
+	})
 }
 
 /*
