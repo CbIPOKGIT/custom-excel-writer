@@ -45,6 +45,7 @@ func (ew *ExcelWriter) SetCellValue(value interface{}, sizes ...int) *WorkBlock 
 	return &ew.writeBlock
 }
 
+// SetCellFormula - пишем формулу в ячейку
 func (ew *ExcelWriter) SetCellFormula(formula string, sizes ...int) *WorkBlock {
 	width, height := 1, 1
 	if len(sizes) >= 1 {

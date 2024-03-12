@@ -1,6 +1,11 @@
 package customexcelwriter
 
-import "github.com/xuri/excelize/v2"
+import (
+	"fmt"
+	"strconv"
+
+	"github.com/xuri/excelize/v2"
+)
 
 const (
 	DEFAULT_SHEET_NAME         = ""
@@ -25,7 +30,7 @@ func (ew *ExcelWriter) CreateFile() *ExcelWriter {
 	return ew
 }
 
-//Удаляем все листы с книги
+// Удаляем все листы с книги
 func (ew *ExcelWriter) RemoveAllSheets(left ...string) *ExcelWriter {
 	for _, sheet := range ew.file.GetSheetList() {
 		var keepIt bool
@@ -42,7 +47,7 @@ func (ew *ExcelWriter) RemoveAllSheets(left ...string) *ExcelWriter {
 	return ew
 }
 
-//Создаем лист с нужным именем и делаем его активным
+// Создаем лист с нужным именем и делаем его активным
 func (ew *ExcelWriter) CreateSheet(sName ...string) *ExcelWriter {
 	var sheetName string
 	if len(sName) > 0 {
@@ -56,24 +61,20 @@ func (ew *ExcelWriter) CreateSheet(sName ...string) *ExcelWriter {
 	ew.SetCursor(1, 1)
 
 	var defaultRowHeight float64 = DEFAULT_ROW_HEIGHT
-
-	ew.file.SetSheetProps(
-		sheetName,
-		&excelize.SheetPropsOptions{
-			DefaultRowHeight: &defaultRowHeight,
-		},
-	)
+	ew.file.SetSheetProps(sheetName, &excelize.SheetPropsOptions{
+		DefaultRowHeight: &defaultRowHeight,
+	})
 	return ew
 }
 
-//Создаем листи и оставляем его единственным
+// Создаем листи и оставляем его единственным
 func (ew *ExcelWriter) CreateLonelySheet(sName string) *ExcelWriter {
 	ew.CreateSheet(sName)
 	ew.RemoveAllSheets(sName)
 	return ew
 }
 
-//Сохраняем файл
+// Сохраняем файл
 func (ew *ExcelWriter) SaveFile(path string) error {
 	return ew.file.SaveAs(path)
 }
@@ -86,7 +87,7 @@ func (ew *ExcelWriter) GetFileContext() ([]byte, error) {
 	return content.Bytes(), nil
 }
 
-//Применяем стиль к блоку ячеек
+// Применяем стиль к блоку ячеек
 func (ew *ExcelWriter) ApplyStyle(style *CellStyle, block *WorkBlock) {
 	if style == nil {
 		return
@@ -105,8 +106,8 @@ func (ew *ExcelWriter) ApplyStyle(style *CellStyle, block *WorkBlock) {
 	ew.file.SetCellStyle(ew.activeSheet, hcell, wcell, styleIndex)
 }
 
-//Выровнять высоту заданных или всех строк всех листов файла
-//nHeight - высота в пикселях. По умолчанию - 14
+// Выровнять высоту заданных или всех строк всех листов файла
+// nHeight - высота в пикселях. По умолчанию - 14
 func (ew *ExcelWriter) AlignFileRows(nHeight ...int) {
 	var height float64 = DEFAULT_ROW_HEIGHT
 	for _, h := range nHeight {
@@ -124,8 +125,8 @@ func (ew *ExcelWriter) AlignFileRows(nHeight ...int) {
 	}
 }
 
-//Установить ширину колонок
-//Если не указываем номер колонки - тогда все колонки блока
+// Установить ширину колонок
+// Если не указываем номер колонки - тогда все колонки блока
 func (ew *ExcelWriter) SetColumnsWidth(widht int, cols ...string) {
 	if len(cols) > 0 {
 		for _, col := range cols {
@@ -137,8 +138,8 @@ func (ew *ExcelWriter) SetColumnsWidth(widht int, cols ...string) {
 	}
 }
 
-//Установить ширину строки
-//Если не указано - тогда все строки блока
+// Установить ширину строки
+// Если не указано - тогда все строки блока
 func (ew *ExcelWriter) SetRowsHeight(height int, rows ...int) {
 	if len(rows) > 0 {
 		for _, row := range rows {
@@ -151,8 +152,8 @@ func (ew *ExcelWriter) SetRowsHeight(height int, rows ...int) {
 	}
 }
 
-//Перевести каретку в начало строки со сдвигом на rows строк
-//По умолчанию rows = 1
+// Перевести каретку в начало строки со сдвигом на rows строк
+// По умолчанию rows = 1
 func (ew *ExcelWriter) CursorNextLine(rows ...int) {
 	cRows := 1
 	for _, r := range rows {
@@ -161,12 +162,25 @@ func (ew *ExcelWriter) CursorNextLine(rows ...int) {
 	ew.SetCursor(1, ew.row+cRows)
 }
 
-//Даем пользователю текущий рабочий блок
+// Даем пользователю текущий рабочий блок
 func (ew *ExcelWriter) WorkBlock() *WorkBlock {
 	return &ew.writeBlock
 }
 
-//Переводим номер колонки (число) в строку
+// Переводим номер колонки (число) в строку
 func (ew ExcelWriter) ColumnIndexToString(index int) (string, error) {
 	return excelize.ColumnNumberToName(index)
+}
+
+// SetPageAutofilters - встановити автофільтри на сторінці
+func (ew *ExcelWriter) SetPageAutofilters() error {
+	var maxRow, lastColumn string = "1", "A"
+	{
+		if rows, err := ew.file.GetRows(ew.activeSheet); err == nil {
+			maxRow = strconv.Itoa(len(rows))
+			lastColumn, _ = ew.ColumnIndexToString(len(rows[0]))
+		}
+	}
+
+	return ew.file.AutoFilter(ew.activeSheet, fmt.Sprintf("A1:%s%s", lastColumn, maxRow), []excelize.AutoFilterOptions{})
 }
