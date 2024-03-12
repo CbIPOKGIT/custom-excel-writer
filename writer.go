@@ -1,6 +1,7 @@
 package customexcelwriter
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/xuri/excelize/v2"
@@ -168,22 +169,15 @@ func (ew ExcelWriter) ColumnIndexToString(index int) (string, error) {
 	return excelize.ColumnNumberToName(index)
 }
 
-// FreezePanes - зафіксувати панель
-func (ew *ExcelWriter) FreezePanes(col, row, xsplit, ysplit int) error {
-	topLeftColumn, err := ew.ColumnIndexToString(col)
-	if err != nil {
-		return err
+// SetPageAutofilters - встановити автофільтри на сторінці
+func (ew *ExcelWriter) SetPageAutofilters() error {
+	var maxRow, lastColumn string = "1", "A"
+	{
+		if rows, err := ew.file.GetRows(ew.activeSheet); err == nil {
+			maxRow = strconv.Itoa(len(rows))
+			lastColumn, _ = ew.ColumnIndexToString(len(rows[0]))
+		}
 	}
 
-	topLeftColumn += strconv.FormatInt(int64(row), 10)
-
-	ew.file.SetPanes(ew.activeSheet, &excelize.Panes{
-		Freeze:      true,
-		TopLeftCell: topLeftColumn,
-		XSplit:      xsplit,
-		YSplit:      ysplit,
-		ActivePane:  "topRight",
-	})
-
-	return nil
+	return ew.file.AutoFilter(ew.activeSheet, fmt.Sprintf("A1:%s%s", lastColumn, maxRow), []excelize.AutoFilterOptions{})
 }
