@@ -51,7 +51,11 @@ func (ew *ExcelWriter) CreateSheet(sName ...string) *ExcelWriter {
 	ew.file.NewSheet(sheetName)
 	ew.activeSheet = sheetName
 	ew.SetCursor(1, 1)
-	ew.file.SetSheetFormatPr(sheetName, excelize.DefaultRowHeight(14))
+
+	var defaultRowHeight float64 = 14
+	ew.file.SetSheetProps(sheetName, &excelize.SheetPropsOptions{
+		DefaultRowHeight: &defaultRowHeight,
+	})
 	return ew
 }
 
