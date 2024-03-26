@@ -188,7 +188,7 @@ func (ew *ExcelWriter) SetPageAutofilters() error {
 // freezePanes заморожує рядки та стовпці вище та лівіше заданих координат.
 func (ew *ExcelWriter) FreezePanes(row, col int) error {
 	// Перетворюємо координати рядка та стовпця на нотацію Excel.
-	cell, err := excelize.CoordinatesToCellName(col, row)
+	cell, err := excelize.CoordinatesToCellName(col, row+1)
 	if err != nil {
 		return fmt.Errorf("не вдалося перетворити координати на ім'я комірки: %w", err)
 	}
