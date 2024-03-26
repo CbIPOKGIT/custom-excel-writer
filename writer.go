@@ -181,3 +181,26 @@ func (ew *ExcelWriter) SetPageAutofilters() error {
 
 	return ew.file.AutoFilter(ew.activeSheet, fmt.Sprintf("A1:%s%s", lastColumn, maxRow), []excelize.AutoFilterOptions{})
 }
+
+// freezePanes заморожує рядки та стовпці вище та лівіше заданих координат.
+func (ew *ExcelWriter) FreezePanes(row, col int) error {
+	// Перетворюємо координати рядка та стовпця на нотацію Excel.
+	cell, err := excelize.CoordinatesToCellName(col, row)
+	if err != nil {
+		return fmt.Errorf("не вдалося перетворити координати на ім'я комірки: %w", err)
+	}
+
+	// Встановлюємо панелі, щоб заморозити рядки та стовпці вище та лівіше заданої комірки.
+	if err := ew.file.SetPanes(ew.activeSheet, &excelize.Panes{
+		Freeze:      true,       // Увімкнути заморожування
+		Split:       false,      // Вимкнути розділення
+		XSplit:      0,          // Немає горизонтального розділення
+		YSplit:      row - 1,    // Вертикальне розділення на рядку вище заданого рядка
+		TopLeftCell: cell,       // Верхня ліва комірка замороженої області
+		ActivePane:  "topRight", // Встановити активну панель у верхньому правому куті (незаморожена область)
+	}); err != nil {
+		return fmt.Errorf("не вдалося встановити панелі: %w", err)
+	}
+
+	return nil
+}
