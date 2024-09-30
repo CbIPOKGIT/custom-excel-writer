@@ -185,6 +185,20 @@ func (ew *ExcelWriter) SetPageAutofilters(options ...excelize.AutoFilterOptions)
 	return ew.file.AutoFilter(ew.activeSheet, fmt.Sprintf("A1:%s%s", lastColumn, maxRow), options)
 }
 
+// ApplyRowsVisibility - змінити видимість рядків на сторінці через callback
+func (ew *ExcelWriter) SetRowsVisibility(callback func(row []string) bool) error {
+	rows, err := ew.file.GetRows(ew.activeSheet)
+	if err != nil {
+		return fmt.Errorf("не вдалося отримати рядки: %w", err)
+	}
+
+	for i, row := range rows {
+		ew.file.SetRowVisible(ew.activeSheet, i+1, callback(row))
+	}
+
+	return nil
+}
+
 // freezePanes заморожує рядки та стовпці вище та лівіше заданих координат.
 func (ew *ExcelWriter) FreezePanes(row, col int) error {
 	// Перетворюємо координати рядка та стовпця на нотацію Excel.
