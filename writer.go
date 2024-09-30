@@ -173,7 +173,7 @@ func (ew ExcelWriter) ColumnIndexToString(index int) (string, error) {
 }
 
 // SetPageAutofilters - встановити автофільтри на сторінці
-func (ew *ExcelWriter) SetPageAutofilters() error {
+func (ew *ExcelWriter) SetPageAutofilters(options ...excelize.AutoFilterOptions) error {
 	var maxRow, lastColumn string = "1", "A"
 	{
 		if rows, err := ew.file.GetRows(ew.activeSheet); err == nil {
@@ -182,7 +182,7 @@ func (ew *ExcelWriter) SetPageAutofilters() error {
 		}
 	}
 
-	return ew.file.AutoFilter(ew.activeSheet, fmt.Sprintf("A1:%s%s", lastColumn, maxRow), []excelize.AutoFilterOptions{})
+	return ew.file.AutoFilter(ew.activeSheet, fmt.Sprintf("A1:%s%s", lastColumn, maxRow), options)
 }
 
 // freezePanes заморожує рядки та стовпці вище та лівіше заданих координат.
