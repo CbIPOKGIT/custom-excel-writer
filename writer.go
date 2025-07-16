@@ -1,6 +1,7 @@
 package customexcelwriter
 
 import (
+	"bytes"
 	"fmt"
 	"strconv"
 
@@ -28,6 +29,22 @@ func (ew *ExcelWriter) CreateFile() *ExcelWriter {
 	ew.activeSheet = "Sheet1"
 	ew.SetCursor(1, 1)
 	return ew
+}
+
+// OpenFileFromContent - відкриваємо вже існуючий файл
+func (ew *ExcelWriter) OpenFileFromContent(content []byte) (*ExcelWriter, error) {
+	file, err := excelize.OpenReader(bytes.NewReader(content))
+	if err != nil {
+		return nil, err
+	}
+	ew.file = file
+	if len(ew.file.GetSheetList()) == 0 {
+		return nil, fmt.Errorf("file doesn't have any sheets")
+	} else {
+		ew.activeSheet = ew.file.GetSheetList()[0]
+	}
+	ew.SetCursor(1, 1)
+	return ew, nil
 }
 
 // Удаляем все листы с книги
@@ -219,5 +236,78 @@ func (ew *ExcelWriter) FreezePanes(row, col int) error {
 		return fmt.Errorf("не вдалося встановити панелі: %w", err)
 	}
 
+	return nil
+}
+
+// HighestColumn - повертає останню колонку на сторінці
+func (ew *ExcelWriter) HighestColumn() int {
+	rows, err := ew.file.GetRows(ew.activeSheet)
+	if err != nil {
+		return 1
+	}
+
+	var maxLen int = 1
+	for _, row := range rows {
+		if len(row) > maxLen {
+			maxLen = len(row)
+		}
+	}
+	return maxLen
+}
+
+// HighestRow - повертає останній рядок на сторінці
+func (ew *ExcelWriter) HighestRow() int {
+	rows, err := ew.file.GetRows(ew.activeSheet)
+	if err != nil {
+		return 1
+	}
+	return len(rows)
+}
+
+// RemoveColumns - видалити задані колонки з листа
+func (ew *ExcelWriter) RemoveColumns(columns []int) error {
+	for i := len(columns) - 1; i >= 0; i-- {
+		if colStr, err := excelize.ColumnNumberToName(columns[i]); err == nil {
+			if err := ew.file.RemoveCol(ew.activeSheet, colStr); err != nil {
+				return fmt.Errorf("error while removing column: %w", err)
+			}
+		} else {
+			return err
+		}
+	}
+	return nil
+}
+
+// RemoveColumnsFrom - видалити колонки з листа починаючи з заданої
+func (ew *ExcelWriter) RemoveColumnsFrom(column int) error {
+	highestColumn := ew.HighestColumn()
+	if column < 1 || column > highestColumn {
+		return nil
+	}
+
+	columnsToRemove := make([]int, 0, highestColumn-column+1)
+	for i := column; i <= highestColumn; i++ {
+		columnsToRemove = append(columnsToRemove, i)
+	}
+
+	return ew.RemoveColumns(columnsToRemove)
+}
+
+// GetCellValue - повертає значення комірки
+func (ew *ExcelWriter) GetCellValue(column, row int) (string, error) {
+	cell, err := excelize.CoordinatesToCellName(column, row)
+	if err != nil {
+		return "", fmt.Errorf("не вдалося перетворити координати на ім'я комірки: %w", err)
+	}
+
+	return ew.file.GetCellValue(ew.activeSheet, cell)
+}
+
+func (ew *ExcelWriter) Close() error {
+	if ew.file != nil {
+		err := ew.file.Close()
+		ew.file = nil
+		return err
+	}
 	return nil
 }
