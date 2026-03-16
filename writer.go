@@ -26,7 +26,6 @@ type ExcelWriter struct {
 func (ew *ExcelWriter) CreateFile() *ExcelWriter {
 	ew.file = excelize.NewFile()
 	ew.file.SetDefaultFont("Calibri")
-	ew.activeSheet = "Sheet1"
 	ew.SetCursor(1, 1)
 	return ew
 }
@@ -66,6 +65,9 @@ func (ew *ExcelWriter) RemoveAllSheets(left ...string) *ExcelWriter {
 
 // Создаем лист с нужным именем и делаем его активным
 func (ew *ExcelWriter) CreateSheet(sName ...string) *ExcelWriter {
+	// Якщо це перший лист, який створюється - видаляємо стандартний.
+	var firstSheet bool = ew.activeSheet == ""
+
 	var sheetName string
 	if len(sName) > 0 {
 		sheetName = sName[0]
@@ -81,6 +83,10 @@ func (ew *ExcelWriter) CreateSheet(sName ...string) *ExcelWriter {
 	ew.file.SetSheetProps(sheetName, &excelize.SheetPropsOptions{
 		DefaultRowHeight: &defaultRowHeight,
 	})
+
+	if firstSheet {
+		ew.RemoveAllSheets(sheetName)
+	}
 	return ew
 }
 
@@ -218,20 +224,32 @@ func (ew *ExcelWriter) SetRowsVisibility(callback func(row []string) bool) error
 
 // freezePanes заморожує рядки та стовпці вище та лівіше заданих координат.
 func (ew *ExcelWriter) FreezePanes(row, col int) error {
-	// Перетворюємо координати рядка та стовпця на нотацію Excel.
-	cell, err := excelize.CoordinatesToCellName(col, row+1)
+	if row < 0 || col < 0 {
+		return fmt.Errorf("row and col must be greater than or equal to 0")
+	}
+
+	cell, err := excelize.CoordinatesToCellName(col+1, row+1)
 	if err != nil {
 		return fmt.Errorf("не вдалося перетворити координати на ім'я комірки: %w", err)
 	}
 
-	// Встановлюємо панелі, щоб заморозити рядки та стовпці вище та лівіше заданої комірки.
+	activePane := "topLeft"
+	switch {
+	case row > 0 && col > 0:
+		activePane = "bottomRight"
+	case row > 0:
+		activePane = "bottomLeft"
+	case col > 0:
+		activePane = "topRight"
+	}
+
 	if err := ew.file.SetPanes(ew.activeSheet, &excelize.Panes{
-		Freeze:      true,       // Увімкнути заморожування
-		Split:       false,      // Вимкнути розділення
-		XSplit:      0,          // Немає горизонтального розділення
-		YSplit:      row,        // Вертикальне розділення на рядку
-		TopLeftCell: cell,       // Верхня ліва комірка замороженої області
-		ActivePane:  "topRight", // Встановити активну панель у верхньому правому куті (незаморожена область)
+		Freeze:      true,
+		Split:       false,
+		XSplit:      col,
+		YSplit:      row,
+		TopLeftCell: cell,
+		ActivePane:  activePane,
 	}); err != nil {
 		return fmt.Errorf("не вдалося встановити панелі: %w", err)
 	}
