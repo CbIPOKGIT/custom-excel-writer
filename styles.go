@@ -8,8 +8,15 @@ import (
 
 const (
 	DEFAULT_FONT_SIZE = 9
+	COLOR_WARNING     = "fa8072"
+)
 
-	COLOR_WARNING = "fa8072"
+const (
+	FORMAT_CELL_AS_NUMBER uint8 = iota + 1
+	FORMAT_CELL_AS_INT
+	FORMAT_CELL_AS_PERCENT_DECIMAL
+	FORMAT_CELL_AS_PERCENT
+	FORMAT_CELL_AS_TEXT
 )
 
 type CellStyle struct {
@@ -27,6 +34,8 @@ type CellStyle struct {
 	HorizontalAlignment string //Горизонтальное выравнивание (left, center, right)
 	VerticalAlignment   string //Вертикальное выравнивание (top, center)
 	DontWrap            bool   //Не переносить текст
+
+	Format *uint8 //Формат ячейки (число, процент, текст)
 }
 
 func (ew ExcelWriter) GetHeaderStyle() *CellStyle {
@@ -47,6 +56,44 @@ func (ew ExcelWriter) GetCommonStyle() *CellStyle {
 		VerticalAlignment:   "top",
 		BorderStyle:         "thin",
 		BorderColor:         "a0a0a0",
+	}
+}
+
+// Применяем стиль к блоку ячеек
+func (ew *ExcelWriter) ApplyStyle(style *CellStyle, block *WorkBlock) {
+	if style == nil {
+		return
+	}
+	var wb WorkBlock
+	if block == nil {
+		wb = ew.writeBlock
+	} else {
+		wb = *block
+	}
+	hcell, wcell := wb.GetFirstLastCells()
+	styleIndex, err := ew.file.NewStyle(style.calculateStyle())
+	if err != nil {
+		return
+	}
+	ew.file.SetCellStyle(ew.activeSheet, hcell, wcell, styleIndex)
+}
+
+// Приховати колонку
+func (ew *ExcelWriter) HideColumn(cols ...int) {
+	hiddneCols := make([]int, 0)
+
+	if len(cols) == 0 {
+		for i := ew.WorkBlock().ColStart; i <= ew.writeBlock.ColEnd; i++ {
+			hiddneCols = append(hiddneCols, i)
+		}
+	} else {
+		hiddneCols = cols
+	}
+
+	for _, col := range hiddneCols {
+		if colName, err := excelize.ColumnNumberToName(col); err == nil {
+			ew.file.SetColVisible(ew.activeSheet, colName, false)
+		}
 	}
 }
 
@@ -121,8 +168,23 @@ func (cs CellStyle) calculateStyle() *excelize.Style {
 
 	//Перенос слов
 	alignment.WrapText = !cs.DontWrap
-
 	exstyle.Alignment = &alignment
+
+	// Формат ячейки
+	if cs.Format != nil {
+		switch *cs.Format {
+		case FORMAT_CELL_AS_NUMBER:
+			exstyle.NumFmt = 2
+		case FORMAT_CELL_AS_INT:
+			exstyle.NumFmt = 1
+		case FORMAT_CELL_AS_PERCENT_DECIMAL:
+			exstyle.NumFmt = 10
+		case FORMAT_CELL_AS_PERCENT:
+			exstyle.NumFmt = 9
+		case FORMAT_CELL_AS_TEXT:
+			exstyle.NumFmt = 49
+		}
+	}
 
 	return exstyle
 }

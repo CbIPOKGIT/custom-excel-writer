@@ -23,6 +23,11 @@ type ExcelWriter struct {
 	writeBlock WorkBlock //Лежат данные последнего блока, который писали
 }
 
+func New() *ExcelWriter {
+	w := &ExcelWriter{}
+	return w.CreateFile()
+}
+
 func (ew *ExcelWriter) CreateFile() *ExcelWriter {
 	ew.file = excelize.NewFile()
 	ew.file.SetDefaultFont("Calibri")
@@ -70,7 +75,7 @@ func (ew *ExcelWriter) CreateSheet(sName ...string) *ExcelWriter {
 
 	var sheetName string
 	if len(sName) > 0 {
-		sheetName = sName[0]
+		sheetName = PrepareSheetName(sName[0])
 	} else {
 		sheetName = "Worksheet"
 	}
@@ -92,8 +97,24 @@ func (ew *ExcelWriter) CreateSheet(sName ...string) *ExcelWriter {
 
 // Создаем листи и оставляем его единственным
 func (ew *ExcelWriter) CreateLonelySheet(sName string) *ExcelWriter {
-	ew.CreateSheet(sName)
-	ew.RemoveAllSheets(sName)
+	sheetName := PrepareSheetName(sName)
+	ew.CreateSheet(sheetName)
+	ew.RemoveAllSheets(sheetName)
+	return ew
+}
+
+// Додаємо лист на початок списку листів
+func (ew *ExcelWriter) UnshiftSheet(sName string) *ExcelWriter {
+	initialSheets := ew.file.GetSheetList()
+
+	sheetName := PrepareSheetName(sName)
+	ew.CreateSheet(sheetName)
+
+	if len(initialSheets) == 0 {
+		return ew
+	}
+
+	ew.file.MoveSheet(sheetName, initialSheets[0])
 	return ew
 }
 
@@ -108,25 +129,6 @@ func (ew *ExcelWriter) GetFileContext() ([]byte, error) {
 		return nil, err
 	}
 	return content.Bytes(), nil
-}
-
-// Применяем стиль к блоку ячеек
-func (ew *ExcelWriter) ApplyStyle(style *CellStyle, block *WorkBlock) {
-	if style == nil {
-		return
-	}
-	var wb WorkBlock
-	if block == nil {
-		wb = ew.writeBlock
-	} else {
-		wb = *block
-	}
-	hcell, wcell := wb.GetFirstLastCells()
-	styleIndex, err := ew.file.NewStyle(style.calculateStyle())
-	if err != nil {
-		return
-	}
-	ew.file.SetCellStyle(ew.activeSheet, hcell, wcell, styleIndex)
 }
 
 // Выровнять высоту заданных или всех строк всех листов файла

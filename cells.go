@@ -6,7 +6,11 @@ import (
 	"github.com/xuri/excelize/v2"
 )
 
-// Устанавливаем курсор вручную
+func (ew *ExcelWriter) GetCursor() (col, row int) {
+	return ew.col, ew.row
+}
+
+// Встановлюємо курсор вручну
 func (ew *ExcelWriter) SetCursor(col, row int) *ExcelWriter {
 	if col > 0 {
 		ew.col = col
